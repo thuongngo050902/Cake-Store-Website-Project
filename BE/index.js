@@ -1,17 +1,11 @@
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app = require('./src/app');
+const config = require('./src/config');
+const logger = require('./src/utils/logger');
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Basic route
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Cake Store API' });
-});
+const PORT = config.port;
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
+  logger.info(`Environment: ${config.nodeEnv}`);
 });

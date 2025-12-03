@@ -1,0 +1,47 @@
+Structure:
+
+```bash
+BE/
+├── src/
+│   ├── app.js                    # Express app configuration
+│   ├── config/                   # Configuration files
+│   │   ├── index.js
+│   │   └── database.js
+│   ├── routes/                   # API routes
+│   │   ├── index.js
+│   │   ├── cake.routes.js
+│   │   ├── user.routes.js
+│   │   └── order.routes.js
+│   ├── controllers/              # Request handlers
+│   │   ├── cake.controller.js
+│   │   ├── user.controller.js
+│   │   └── order.controller.js
+│   ├── services/                 # Business logic
+│   │   ├── cake.service.js
+│   │   ├── user.service.js
+│   │   └── order.service.js
+│   ├── models/                   # Data models
+│   │   ├── Cake.js
+│   │   ├── User.js
+│   │   └── Order.js
+│   ├── middleware/               # Custom middleware
+│   │   ├── auth.middleware.js
+│   │   └── validator.middleware.js
+│   └── utils/                    # Utilities
+│       └── logger.js
+├── .env.example                  # Environment variables template
+├── .gitignore
+├── index.js                      # Entry point
+└── package.json
+```
+
+Features:
+
+✅ MVC architecture (Routes → Controllers → Services → Models)
+✅ CORS middleware configured
+✅ Error handling middleware
+✅ Authentication & authorization middleware (ready for JWT)
+✅ Validation middleware
+✅ Logger utility
+✅ Environment configuration with dotenv
+✅ Mock data in services (ready to replace with database)
