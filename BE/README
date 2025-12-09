@@ -1,47 +1,161 @@
-Structure:
+# Cake Store Backend API
+
+## Structure:
 
 ```bash
 BE/
 ├── src/
 │   ├── app.js                    # Express app configuration
 │   ├── config/                   # Configuration files
-│   │   ├── index.js
-│   │   └── database.js
+│   │   ├── index.js              # Environment variables
+│   │   └── supabase.js           # Supabase client
 │   ├── routes/                   # API routes
-│   │   ├── index.js
-│   │   ├── cake.routes.js
-│   │   ├── user.routes.js
-│   │   └── order.routes.js
+│   │   ├── index.js              # Combine all routes
+│   │   ├── auth.routes.js        # Authentication routes
+│   │   ├── product.routes.js     # Product routes
+│   │   ├── category.routes.js    # Category routes
+│   │   ├── review.routes.js      # Review routes
+│   │   ├── order.routes.js       # Order routes
+│   │   └── cart.routes.js        # Cart routes (placeholder)
 │   ├── controllers/              # Request handlers
-│   │   ├── cake.controller.js
-│   │   ├── user.controller.js
+│   │   ├── auth.controller.js
+│   │   ├── product.controller.js
+│   │   ├── category.controller.js
+│   │   ├── review.controller.js
 │   │   └── order.controller.js
 │   ├── services/                 # Business logic
-│   │   ├── cake.service.js
-│   │   ├── user.service.js
+│   │   ├── auth.service.js
+│   │   ├── product.service.js
+│   │   ├── category.service.js
+│   │   ├── review.service.js
 │   │   └── order.service.js
 │   ├── models/                   # Data models
-│   │   ├── Cake.js
-│   │   ├── User.js
-│   │   └── Order.js
+│   │   ├── user.model.js
+│   │   ├── product.model.js
+│   │   ├── category.model.js
+│   │   ├── review.model.js
+│   │   ├── order.model.js
+│   │   └── orderItem.model.js
 │   ├── middleware/               # Custom middleware
-│   │   ├── auth.middleware.js
+│   │   ├── auth.middleware.js    # JWT authentication & admin check
 │   │   └── validator.middleware.js
 │   └── utils/                    # Utilities
 │       └── logger.js
 ├── .env.example                  # Environment variables template
 ├── .gitignore
 ├── index.js                      # Entry point
-└── package.json
+├── package.json
+└── README
 ```
 
-Features:
+## Database Schema (Postgres/Supabase):
+
+```sql
+-- users
+users(id, name, email, password, is_admin, created_at, updated_at)
+
+-- categories
+categories(id, name, description, created_at, updated_at)
+
+-- products
+products(id, name, image, brand, price, category_id, count_in_stock, description, rating, num_reviews, created_at, updated_at)
+
+-- reviews
+reviews(id, product_id, name, rating, comment, created_at, updated_at)
+
+-- orders
+orders(id, user_id, payment_method, items_price, tax_price, shipping_price, total_price, is_paid, paid_at, is_delivered, delivered_at, shipping_address, shipping_city, shipping_postal_code, shipping_country, created_at, updated_at)
+
+-- order_items
+order_items(id, order_id, product_id, name, qty, image, price)
+```
+
+## API Endpoints:
+
+### Authentication (`/api/auth`)
+- `POST /register` - Register new user
+- `POST /login` - Login user
+- `GET /profile` - Get current user (auth required)
+- `PUT /profile` - Update profile (auth required)
+
+### Products (`/api/products`)
+- `GET /` - Get all products (with filters: category_id, brand, search, min_price, max_price, sort_by, sort_order)
+- `GET /:id` - Get product by ID
+- `POST /` - Create product (admin only)
+- `PUT /:id` - Update product (admin only)
+- `DELETE /:id` - Delete product (admin only)
+
+### Categories (`/api/categories`)
+- `GET /` - Get all categories
+- `GET /:id` - Get category by ID
+- `GET /:id/products` - Get products by category
+- `POST /` - Create category (admin only)
+- `PUT /:id` - Update category (admin only)
+- `DELETE /:id` - Delete category (admin only)
+
+### Reviews (`/api/reviews`)
+- `GET /product/:productId` - Get reviews for product
+- `GET /:id` - Get review by ID
+- `POST /` - Create review
+- `PUT /:id` - Update review
+- `DELETE /:id` - Delete review
+
+### Orders (`/api/orders`)
+- `GET /` - Get orders (user's own or all if admin)
+- `GET /:id` - Get order by ID
+- `POST /` - Create order (auth required)
+- `PUT /:id` - Update order (admin only)
+- `PUT /:id/pay` - Update order to paid
+- `PUT /:id/deliver` - Update order to delivered (admin only)
+- `DELETE /:id` - Delete order (admin only)
+
+### Cart (`/api/cart`)
+- Placeholder endpoints for cart functionality
+
+## Features:
 
 ✅ MVC architecture (Routes → Controllers → Services → Models)
+✅ Supabase/Postgres database integration
+✅ JWT authentication & authorization
+✅ Admin role checking
 ✅ CORS middleware configured
 ✅ Error handling middleware
-✅ Authentication & authorization middleware (ready for JWT)
 ✅ Validation middleware
 ✅ Logger utility
+✅ Product filtering, searching, and sorting
+✅ Review system with automatic rating updates
+✅ Order management with payment and delivery tracking
 ✅ Environment configuration with dotenv
-✅ Mock data in services (ready to replace with database)
+
+## Setup:
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Configure environment variables:
+   - Copy `.env.example` to `.env`
+   - Fill in your Supabase credentials:
+     ```
+     SUPABASE_URL=your-project-url
+     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+     SUPABASE_ANON_KEY=your-anon-key
+     JWT_SECRET=your-strong-secret-key
+     ```
+
+3. Create Supabase tables (see Database Schema above)
+
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Dependencies:
+
+- `express` - Web framework
+- `@supabase/supabase-js` - Supabase client
+- `bcrypt` - Password hashing
+- `jsonwebtoken` - JWT authentication
+- `dotenv` - Environment variables
+- `nodemon` - Development auto-reload
