@@ -59,12 +59,14 @@ categories(id, name, description, created_at, updated_at)
 
 -- products
 products(id, name, image, brand, price, category_id, count_in_stock, description, rating, num_reviews, created_at, updated_at)
+-- Note: price is stored as integer VND (Vietnamese Dong)
 
 -- reviews
 reviews(id, product_id, name, rating, comment, created_at, updated_at)
 
 -- orders
 orders(id, user_id, payment_method, items_price, tax_price, shipping_price, total_price, is_paid, paid_at, is_delivered, delivered_at, shipping_address, shipping_city, shipping_postal_code, shipping_country, created_at, updated_at)
+-- Note: All price fields (items_price, tax_price, shipping_price, total_price) are stored as integer VND
 
 -- order_items
 order_items(id, order_id, product_id, name, qty, image, price)
@@ -127,6 +129,19 @@ order_items(id, order_id, product_id, name, qty, image, price)
 ✅ Order management with payment and delivery tracking
 ✅ Environment configuration with dotenv
 
+## Currency Policy:
+
+**Vietnamese Dong (VND) Integer Representation**
+- All monetary values use **integer VND** (no fractional currency)
+- Prices stored and calculated as integers (e.g., 50000 = 50.000₫)
+- No cent-based arithmetic (no multiply/divide by 100)
+- Tax and shipping calculated with integer arithmetic and rounding
+- Display formatting: `50.000₫` or `50.000 VND`
+- Example values:
+  - Product price: `50000` VND (50.000₫)
+  - Shipping: `20000` VND (20.000₫)
+  - Free shipping threshold: `200000` VND (200.000₫)
+
 ## Setup:
 
 1. Install dependencies:
@@ -142,9 +157,17 @@ order_items(id, order_id, product_id, name, qty, image, price)
      SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
      SUPABASE_ANON_KEY=your-anon-key
      JWT_SECRET=your-strong-secret-key
+     
+     # Optional: Order pricing (VND - Vietnamese Dong)
+     TAX_RATE=0.1
+     SHIPPING_PRICE=20000
+     FREE_SHIPPING_THRESHOLD=200000
+     ENABLE_FREE_SHIPPING=true
      ```
 
 3. Create Supabase tables (see Database Schema above)
+   - **Important**: All price fields should store integer VND values
+   - Recommended types: `integer` or `numeric(12,0)` for price columns
 
 4. Run the development server:
    ```bash
