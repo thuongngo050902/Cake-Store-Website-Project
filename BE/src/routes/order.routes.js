@@ -1,26 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/order.controller');
+const { protect, authorizeAdmin } = require('../middleware/auth.middleware');
 
-// GET all orders (user gets their own, admin gets all)
-router.get('/', orderController.getAllOrders);
+// POST create new order (protected - requires authentication)
+router.post('/', protect, orderController.createOrder);
 
-// GET single order by ID
-router.get('/:id', orderController.getOrderById);
+// GET user's own orders (protected - requires authentication)
+router.get('/my', protect, orderController.getMyOrders);
 
-// POST create new order (requires authentication)
-router.post('/', orderController.createOrder);
+// GET all orders (protected - admin only)
+router.get('/', protect, authorizeAdmin, orderController.getAllOrders);
 
-// PUT update order (admin only)
-router.put('/:id', orderController.updateOrder);
+// GET single order by ID (protected - owner or admin)
+router.get('/:id', protect, orderController.getOrderById);
 
-// PUT update order to paid
-router.put('/:id/pay', orderController.updateOrderToPaid);
+// PUT update order (protected - admin only)
+router.put('/:id', protect, authorizeAdmin, orderController.updateOrder);
 
-// PUT update order to delivered (admin only)
-router.put('/:id/deliver', orderController.updateOrderToDelivered);
+// PUT update order to paid (protected - admin only)
+router.put('/:id/pay', protect, authorizeAdmin, orderController.updateOrderToPaid);
 
-// DELETE order (admin only)
-router.delete('/:id', orderController.deleteOrder);
+// PUT update order to delivered (protected - admin only)
+router.put('/:id/deliver', protect, authorizeAdmin, orderController.updateOrderToDelivered);
+
+// DELETE order (protected - admin only)
+router.delete('/:id', protect, authorizeAdmin, orderController.deleteOrder);
 
 module.exports = router;
