@@ -35,19 +35,78 @@ exports.getReviewById = async (id) => {
 // Create new review
 exports.createReview = async (reviewData) => {
   try {
+    // Validate required fields at service layer (defensive)
+    if (!reviewData.product_id) {
+      throw new Error('Validation error: product_id is required');
+    }
+    if (!reviewData.rating) {
+      throw new Error('Validation error: rating is required');
+    }
+    if (!reviewData.user_id) {
+      throw new Error('Validation error: user_id is required');
+    }
+    if (!reviewData.name) {
+      throw new Error('Validation error: name is required');
+    }
+    
+    console.log('[createReview] Creating review for product:', reviewData.product_id, 'by user:', reviewData.user_id);
+    
+    // Insert review into database
     const { data, error } = await supabase
       .from('reviews')
       .insert([reviewData])
-      .select()
+      .select('*')
       .single();
     
-    if (error) throw error;
+    if (error) {
+      // Log full Supabase error with all properties for debugging
+      console.error('[createReview] Supabase error (full):', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      console.error('[createReview] Error details - code:', error.code, 'message:', error.message, 'details:', error.details, 'hint:', error.hint);
+      
+      // Handle specific database errors
+      if (error.code === '23505') {
+        throw new Error('Validation error: You have already reviewed this product');
+      }
+      if (error.code === '23503') {
+        throw new Error('Validation error: Product not found or invalid user_id');
+      }
+      if (error.code === '23502') {
+        throw new Error('Validation error: Required field is missing (NOT NULL constraint)');
+      }
+      if (error.code === '42703') {
+        throw new Error('Database error: Column does not exist. Check reviews table schema.');
+      }
+      if (error.code === 'PGRST116') {
+        throw new Error('Database error: Row Level Security policy violation or permission denied');
+      }
+      
+      // Return detailed error message for debugging
+      throw new Error(`Database error: ${error.message} (code: ${error.code}, details: ${error.details || 'none'})`);
+    }
+    
+    if (!data) {
+      console.error('[createReview] No data returned from insert');
+      throw new Error('Database error: Failed to create review');
+    }
+    
+    console.log('[createReview] Review created successfully, ID:', data.id);
     
     // Update product rating and num_reviews
-    await this.updateProductRating(reviewData.product_id);
+    try {
+      await this.updateProductRating(reviewData.product_id);
+      console.log('[createReview] Product rating updated for product:', reviewData.product_id);
+    } catch (ratingError) {
+      // Log but don't fail the request if rating update fails
+      console.error('[createReview] Failed to update product rating:', ratingError.message);
+    }
     
     return data;
   } catch (error) {
+    // Re-throw validation errors as-is
+    if (error.message.includes('Validation error')) {
+      throw error;
+    }
+    // Wrap other errors
     throw new Error(`Error creating review: ${error.message}`);
   }
 };
