@@ -23,8 +23,18 @@ exports.login = async (req, res, next) => {
 // Get current user profile
 exports.getProfile = async (req, res, next) => {
   try {
+    // Safety check: ensure req.user is defined
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Authentication required. User not found in request.' 
+      });
+    }
+    
     const user = await authService.getUserById(req.user.id);
-    res.json({ success: true, data: user });
+    // Remove password from response (additional safety)
+    const { password, ...userWithoutPassword } = user || {};
+    res.json({ success: true, data: userWithoutPassword });
   } catch (error) {
     next(error);
   }
