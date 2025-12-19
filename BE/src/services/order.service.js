@@ -241,6 +241,7 @@ exports.updateOrder = async (id, orderData) => {
 // Update order to paid
 exports.updateOrderToPaid = async (id, paymentResult) => {
   try {
+    // Lines 257-264: Payment update
     const { data, error } = await supabase
       .from('orders')
       .update({
@@ -261,6 +262,7 @@ exports.updateOrderToPaid = async (id, paymentResult) => {
 // Update order to delivered
 exports.updateOrderToDelivered = async (id) => {
   try {
+    // Lines 274-281: Delivery update
     const { data, error } = await supabase
       .from('orders')
       .update({

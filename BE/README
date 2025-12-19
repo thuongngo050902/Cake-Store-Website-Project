@@ -62,7 +62,8 @@ products(id, name, image, brand, price, category_id, count_in_stock, description
 -- Note: price is stored as integer VND (Vietnamese Dong)
 
 -- reviews
-reviews(id, product_id, name, rating, comment, created_at, updated_at)
+reviews(id, product_id, user_id, name, rating, comment, created_at, updated_at)
+-- Note: user_id is foreign key to users table (required for authorization)
 
 -- orders
 orders(id, user_id, payment_method, items_price, tax_price, shipping_price, total_price, is_paid, paid_at, is_delivered, delivered_at, shipping_address, shipping_city, shipping_postal_code, shipping_country, created_at, updated_at)

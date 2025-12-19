@@ -1,0 +1,77 @@
+// Cake Store Database Schema
+// Single-vendor bakery e-commerce system
+// All prices stored as integer VND (Vietnamese Dong)
+
+Table users {
+  id integer [primary key, increment]
+  name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  password varchar(255) [not null]
+  is_admin boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table categories {
+  id integer [primary key, increment]
+  name varchar(255) [not null]
+  description text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table products {
+  id integer [primary key, increment]
+  name varchar(255) [not null]
+  image varchar(500)
+  brand varchar(255)
+  price integer [not null, note: 'Integer VND']
+  category_id integer [ref: > categories.id]
+  count_in_stock integer [default: 0]
+  description text
+  rating decimal(3,1) [default: 0]
+  num_reviews integer [default: 0]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table reviews {
+  id integer [primary key, increment]
+  product_id integer [not null, ref: > products.id]
+  user_id integer [not null, ref: > users.id]
+  name varchar(255) [not null, note: 'Display name copied from users.name']
+  rating integer [not null, note: '1-5 stars']
+  comment text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table orders {
+  id integer [primary key, increment]
+  user_id integer [not null, ref: > users.id]
+  payment_method varchar(100) [default: 'PayPal']
+  items_price integer [not null, note: 'Integer VND']
+  tax_price integer [not null, note: 'Integer VND']
+  shipping_price integer [not null, note: 'Integer VND']
+  total_price integer [not null, note: 'Integer VND']
+  is_paid boolean [default: false]
+  paid_at timestamp
+  is_delivered boolean [default: false]
+  delivered_at timestamp
+  shipping_address varchar(500) [not null]
+  shipping_city varchar(255) [not null]
+  shipping_postal_code varchar(20) [not null]
+  shipping_country varchar(100) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table order_items {
+  id integer [primary key, increment]
+  order_id integer [not null, ref: > orders.id, on_delete: cascade]
+  product_id integer [not null, ref: > products.id]
+  name varchar(255) [not null, note: 'Product name snapshot']
+  qty integer [not null]
+  image varchar(500)
+  price integer [not null, note: 'Price snapshot in VND']
+}

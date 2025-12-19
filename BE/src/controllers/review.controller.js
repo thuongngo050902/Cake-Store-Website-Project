@@ -115,8 +115,9 @@ exports.updateReview = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Review not found' });
     }
     
-    // Check if user owns the review or is admin
-    if (existingReview.user_id !== req.user.id && !req.user.is_admin) {
+    // CRITICAL: Only review OWNER can update (NOT admin)
+    // Admin should not be allowed to edit user review content
+    if (existingReview.user_id !== req.user.id) {
       return res.status(403).json({ 
         success: false, 
         error: 'Forbidden. You can only update your own reviews.' 
@@ -160,7 +161,6 @@ exports.deleteReview = async (req, res, next) => {
     const isAdmin = req.user.is_admin === true;
     
     if (!isOwner && !isAdmin) {
-      console.warn('[deleteReview Controller] Forbidden - user:', req.user.id, 'review owner:', existingReview.user_id);
       return res.status(403).json({ 
         success: false, 
         error: 'Forbidden. Not allowed to delete this review.' 

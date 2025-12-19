@@ -51,6 +51,34 @@ exports.createReview = async (reviewData) => {
     
     console.log('[createReview] Creating review for product:', reviewData.product_id, 'by user:', reviewData.user_id);
     
+    // CRITICAL: Verify user has purchased this product before allowing review
+    console.log('[createReview] Verifying purchase history for user:', reviewData.user_id, 'product:', reviewData.product_id);
+    
+    // Fetching purchase history for review verification
+    const { data: purchasedOrders, error: purchaseError } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        is_paid,
+        order_items!inner(product_id)
+      `)
+      .eq('user_id', reviewData.user_id)
+      .eq('is_paid', true)  // ✅ Only paid orders
+      .eq('order_items.product_id', reviewData.product_id);
+    
+    if (purchaseError) {
+      console.error('[createReview] Error checking purchase history:', purchaseError.message);
+      throw new Error('Database error: Unable to verify purchase history');
+    }
+    
+    // Check if user has at least one paid order containing this product
+    if (!purchasedOrders || purchasedOrders.length === 0) {
+      console.warn('[createReview] Purchase verification FAILED - user:', reviewData.user_id, 'has not purchased product:', reviewData.product_id);
+      throw new Error('Validation error: You can only review products you have purchased');
+    }
+    
+    console.log('[createReview] Purchase verification PASSED - found', purchasedOrders.length, 'paid order(s) containing this product');
+    
     // Insert review into database
     const { data, error } = await supabase
       .from('reviews')
@@ -64,9 +92,6 @@ exports.createReview = async (reviewData) => {
       console.error('[createReview] Error details - code:', error.code, 'message:', error.message, 'details:', error.details, 'hint:', error.hint);
       
       // Handle specific database errors
-      if (error.code === '23505') {
-        throw new Error('Validation error: You have already reviewed this product');
-      }
       if (error.code === '23503') {
         throw new Error('Validation error: Product not found or invalid user_id');
       }
@@ -78,6 +103,10 @@ exports.createReview = async (reviewData) => {
       }
       if (error.code === 'PGRST116') {
         throw new Error('Database error: Row Level Security policy violation or permission denied');
+      }
+      // Duplicate review detection
+      if (error.code === '23505') {
+        throw new Error('Validation error: You have already reviewed this product');
       }
       
       // Return detailed error message for debugging
