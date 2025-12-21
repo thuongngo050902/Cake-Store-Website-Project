@@ -102,14 +102,42 @@ exports.getUserById = async (id) => {
   }
 };
 
-// Update user
+// Update user profile - WHITELIST approach for security
 exports.updateUser = async (id, userData) => {
   try {
-    const updateData = { ...userData };
+    // SECURITY: Whitelist only safe fields that users can update
+    const updateData = {};
     
-    // If password is being updated, hash it
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 10);
+    // Only allow these fields to be updated by regular users
+    if (userData.name !== undefined) {
+      // Validate name
+      const trimmedName = userData.name.trim();
+      if (!trimmedName) {
+        throw new Error('Name cannot be empty');
+      }
+      if (trimmedName.length > 100) {
+        throw new Error('Name is too long (max 100 characters)');
+      }
+      updateData.name = trimmedName;
+    }
+    
+    if (userData.password !== undefined) {
+      // Validate password
+      if (!userData.password || userData.password.length < 8) {
+        throw new Error('Password must be at least 8 characters long');
+      }
+      if (userData.password.length > 128) {
+        throw new Error('Password is too long (max 128 characters)');
+      }
+      // Hash password
+      updateData.password = await bcrypt.hash(userData.password, 10);
+    }
+    
+    // SECURITY: Block updates to sensitive fields even if client sends them
+    // Blocked: is_admin, role, email, id, created_at, updated_at
+    
+    if (Object.keys(updateData).length === 0) {
+      throw new Error('No valid fields to update. Only name and password can be updated.');
     }
     
     const { data, error } = await supabase
