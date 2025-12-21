@@ -20,14 +20,14 @@ exports.register = async (userData) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     
-    // Create user
+    // Create user - SECURITY: is_admin defaults to false, cannot be set during registration
     const { data, error } = await supabase
       .from('users')
       .insert([{
         name: userData.name,
         email: userData.email,
         password: hashedPassword,
-        is_admin: userData.is_admin || false
+        is_admin: false  // SECURITY: Always false on registration. Admins must be promoted by existing admins.
       }])
       .select()
       .single();
