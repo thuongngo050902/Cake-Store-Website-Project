@@ -1,6 +1,7 @@
 # Profile Update Security Tests
 
 ## Test Setup
+
 First, register and login to get a token:
 
 ```bash
@@ -37,7 +38,8 @@ curl -X PUT http://localhost:3000/api/auth/profile \
   }'
 ```
 
-**Expected Result:** 
+**Expected Result:**
+
 - Status: `200 OK`
 - Response: `{ "success": true, "data": { "id": ..., "name": "New Name", ... } }`
 - Name is updated in database
@@ -56,12 +58,14 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `200 OK`
 - Response: `{ "success": true, "data": { ... } }` (password not in response)
 - Password is hashed and updated in database
 - Can login with new password
 
 **Verify new password works:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
@@ -85,6 +89,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `403 Forbidden`
 - Response: `{ "success": false, "error": "Forbidden. Cannot update admin/role fields." }`
 - User's `is_admin` field remains `false` in database
@@ -103,6 +108,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `403 Forbidden`
 - Response: `{ "success": false, "error": "Email cannot be updated through this endpoint. Use email verification flow." }`
 - User's email remains unchanged in database
@@ -123,6 +129,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `403 Forbidden`
 - Validation middleware catches `is_admin` or `email` and rejects the entire request
 - No fields are updated
@@ -142,6 +149,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `200 OK`
 - Both name and password are updated
 - Can login with new password
@@ -160,6 +168,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `400 Bad Request`
 - Response: `{ "success": false, "error": "Password must be at least 8 characters long" }`
 
@@ -177,6 +186,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `400 Bad Request`
 - Response: `{ "success": false, "error": "Name cannot be empty" }`
 
@@ -194,6 +204,7 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 ```
 
 **Expected Result:**
+
 - Status: `400 Bad Request`
 - Response: `{ "success": false, "error": "At least one field (name or password) must be provided for update" }`
 
