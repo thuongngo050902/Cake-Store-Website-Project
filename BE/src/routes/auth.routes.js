@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth.middleware');
-const { validateProfileUpdate } = require('../middleware/validator.middleware');
+const { validateProfileUpdate, validateRegister } = require('../middleware/validator.middleware');
 
-// POST register new user
-router.post('/register', authController.register);
+// POST register new user (with password validation)
+router.post('/register', validateRegister, authController.register);
 
 // POST login
 router.post('/login', authController.login);

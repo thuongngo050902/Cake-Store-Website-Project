@@ -23,6 +23,7 @@ exports.validateUser = (req, res, next) => {
   
   if (!name || !email || !password) {
     return res.status(400).json({ 
+      success: false,
       error: 'Name, email, and password are required' 
     });
   }
@@ -31,12 +32,99 @@ exports.validateUser = (req, res, next) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ 
+      success: false,
       error: 'Invalid email format' 
     });
   }
   
   next();
 };
+
+// SECURITY: Dedicated registration validator with password strength enforcement
+exports.validateRegister = (req, res, next) => {
+  const { name, email, password } = req.body;
+  
+  // Validate required fields
+  if (!name || !email || !password) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Name, email, and password are required' 
+    });
+  }
+  
+  // Validate name
+  if (typeof name !== 'string') {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Name must be a string' 
+    });
+  }
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Name cannot be empty' 
+    });
+  }
+  if (trimmedName.length > 100) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Name is too long (max 100 characters)' 
+    });
+  }
+  
+  // Validate email format
+  if (typeof email !== 'string') {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Email must be a string' 
+    });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Invalid email format' 
+    });
+  }
+  
+  // SECURITY: Validate password strength (same rules as profile update)
+  if (typeof password !== 'string') {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Password must be a string' 
+    });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Password must be at least 8 characters long' 
+    });
+  }
+  if (password.length > 128) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Password is too long (max 128 characters)' 
+    });
+  }
+  const trimmedPassword = password.trim();
+  if (!trimmedPassword) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Password cannot be empty or whitespace only' 
+    });
+  }
+  // Check for weak passwords
+  if (password === '12345678' || password === 'password' || password === 'Password123') {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Password is too weak. Please choose a stronger password.' 
+    });
+  }
+  
+  next();
+};
+
 
 exports.validateOrder = (req, res, next) => {
   const { userId, items } = req.body;
