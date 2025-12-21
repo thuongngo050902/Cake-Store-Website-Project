@@ -67,11 +67,12 @@ exports.createOrder = async (orderData) => {
         .from('products')
         .select('id, name, price, count_in_stock, image')
         .eq('id', item.product_id)
+        .eq('is_active', true)
         .single();
       
       if (productError || !product) {
-        console.error('[createOrder Service] Product not found:', item.product_id);
-        throw new Error(`Validation error: Product not found: ${item.product_id}`);
+        console.error('[createOrder Service] Product not found or inactive:', item.product_id);
+        throw new Error(`Validation error: Product not found or inactive: ${item.product_id}`);
       }
       
       // Check stock availability

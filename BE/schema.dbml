@@ -31,6 +31,7 @@ Table products {
   description text
   rating decimal(3,1) [default: 0]
   num_reviews integer [default: 0]
+  is_active boolean [default: true, note: 'Soft delete: false if product has orders']
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
 }

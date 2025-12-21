@@ -38,6 +38,7 @@ exports.getProductsByCategory = async (categoryId) => {
       .from('products')
       .select('*')
       .eq('category_id', categoryId)
+      .eq('is_active', true)
       .order('name', { ascending: true });
     
     if (error) throw error;
