@@ -1,43 +1,43 @@
 const supabase = require('../config/supabase');
 
 // Get all products with optional filters
-exports.getAllProducts = async (filters = {}) => {
-  try {
-    let query = supabase.from('products').select('*, categories(id, name, description)');
+// exports.getAllProducts = async (filters = {}) => {
+//   try {
+//     let query = supabase.from('products').select('*, categories(id, name, description)');
     
-    // Filter by active products only (for guest/user view)
-    query = query.eq('is_active', true);
+//     // Filter by active products only (for guest/user view)
+//     query = query.eq('is_active', true);
     
-    // Apply filters
-    if (filters.category_id) {
-      query = query.eq('category_id', filters.category_id);
-    }
-    if (filters.brand) {
-      query = query.eq('brand', filters.brand);
-    }
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-    }
-    if (filters.min_price) {
-      query = query.gte('price', filters.min_price);
-    }
-    if (filters.max_price) {
-      query = query.lte('price', filters.max_price);
-    }
+//     // Apply filters
+//     if (filters.category_id) {
+//       query = query.eq('category_id', filters.category_id);
+//     }
+//     if (filters.brand) {
+//       query = query.eq('brand', filters.brand);
+//     }
+//     if (filters.search) {
+//       query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+//     }
+//     if (filters.min_price) {
+//       query = query.gte('price', filters.min_price);
+//     }
+//     if (filters.max_price) {
+//       query = query.lte('price', filters.max_price);
+//     }
     
-    // Sorting
-    const sortBy = filters.sort_by || 'created_at';
-    const sortOrder = filters.sort_order || 'desc';
-    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+//     // Sorting
+//     const sortBy = filters.sort_by || 'created_at';
+//     const sortOrder = filters.sort_order || 'desc';
+//     query = query.order(sortBy, { ascending: sortOrder === 'asc' });
     
-    const { data, error } = await query;
+//     const { data, error } = await query;
     
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    throw new Error(`Error fetching products: ${error.message}`);
-  }
-};
+//     if (error) throw error;
+//     return data;
+//   } catch (error) {
+//     throw new Error(`Error fetching products: ${error.message}`);
+//   }
+// };
 
 // Get product by ID
 exports.getProductById = async (id) => {
@@ -181,5 +181,41 @@ exports.getProductByIdAdmin = async (id) => {
     return data;
   } catch (error) {
     throw new Error(`Error fetching product (admin): ${error.message}`);
+  }
+};
+
+// Get all products with optional filters + sold_qty
+exports.getAllProducts = async (filters = {}) => {
+  try {
+    let query = supabase
+      .from('products')
+      .select('*, categories(id, name, description), order_items(order_id, qty, orders(is_paid))');
+
+    // Apply filters
+    if (filters.category_id) query = query.eq('category_id', filters.category_id);
+    if (filters.brand) query = query.eq('brand', filters.brand);
+    if (filters.search) query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    if (filters.min_price) query = query.gte('price', filters.min_price);
+    if (filters.max_price) query = query.lte('price', filters.max_price);
+
+    const sortBy = filters.sort_by || 'created_at';
+    const sortOrder = filters.sort_order || 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Tính sold_qty
+    const productsWithSold = data.map(p => {
+      const sold_qty = p.order_items?.reduce((acc, item) => {
+        return item.orders?.is_paid ? acc + item.qty : acc;
+      }, 0) || 0;
+
+      return { ...p, sold_qty };
+    });
+
+    return productsWithSold;
+  } catch (error) {
+    throw new Error(`Error fetching products: ${error.message}`);
   }
 };
