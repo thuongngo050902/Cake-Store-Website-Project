@@ -205,10 +205,10 @@ exports.getAllProducts = async (filters = {}) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    // Tính sold_qty
+    // Tính sold_qty → tất cả order_items trong order đã tạo
     const productsWithSold = data.map(p => {
       const sold_qty = p.order_items?.reduce((acc, item) => {
-        return item.orders?.is_paid ? acc + item.qty : acc;
+        return acc + item.qty; // không check is_paid
       }, 0) || 0;
 
       return { ...p, sold_qty };
