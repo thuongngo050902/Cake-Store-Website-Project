@@ -1,0 +1,216 @@
+@startuml MVC_Architecture_Diagram
+title MVC Architecture Diagram of Cake Store System
+
+skinparam backgroundColor #FFFFFF
+skinparam rectangle {
+    BackgroundColor<<view>> #E3F2FD
+    BackgroundColor<<controller>> #FFF9C4
+    BackgroundColor<<model>> #F1F8E9
+    BorderColor #424242
+    FontSize 12
+}
+
+skinparam arrow {
+    Color #424242
+    FontSize 11
+}
+
+' ==================== VIEW LAYER ====================
+package "View Layer\n(Frontend)" <<view>> {
+    rectangle "React + TypeScript\nSPA" as Frontend {
+        component "Product List Page" as ProductList
+        component "Product Detail Page" as ProductDetail
+        component "Shopping Cart Page" as Cart
+        component "Checkout Page" as Checkout
+        component "Order History Page" as OrderHistory
+        component "Admin Dashboard" as AdminDashboard
+        component "Login/Register Page" as Auth
+    }
+}
+
+' ==================== CONTROLLER LAYER ====================
+package "Controller Layer\n(Backend API)" <<controller>> {
+    rectangle "Express.js REST API" as API {
+        component "AuthController\n(POST /api/auth/login\nPOST /api/auth/register)" as AuthController
+        component "ProductController\n(GET /api/products\nGET /api/products/:id)" as ProductController
+        component "OrderController\n(POST /api/orders\nGET /api/orders/:id)" as OrderController
+        component "CategoryController\n(GET /api/categories)" as CategoryController
+        component "ReviewController\n(POST /api/reviews\nGET /api/products/:id/reviews)" as ReviewController
+    }
+    
+    rectangle "Business Logic & Services" as Services {
+        component "AuthService\n(JWT, Password Hashing)" as AuthService
+        component "ProductService\n(Inventory, Pricing)" as ProductService
+        component "OrderService\n(VND Calculation, Stock)" as OrderService
+        component "CategoryService" as CategoryService
+        component "ReviewService\n(Paid-Order Validation)" as ReviewService
+    }
+    
+    rectangle "Middleware" as Middleware {
+        component "Auth Middleware\n(JWT Verification)" as AuthMiddleware
+        component "Validator Middleware\n(Input Validation)" as ValidatorMiddleware
+    }
+}
+
+' ==================== MODEL LAYER ====================
+package "Model Layer\n(Database)" <<model>> {
+    database "Supabase (PostgreSQL)" as DB {
+        entity "User" as UserModel {
+            + id: UUID
+            + email: string
+            + password: string
+            + name: string
+            + is_admin: boolean
+            --
+            Business Rule:
+            JWT authentication
+        }
+        
+        entity "Product" as ProductModel {
+            + id: UUID
+            + name: string
+            + price: integer (VND)
+            + count_in_stock: integer
+            + is_active: boolean
+            + category_id: UUID
+            --
+            Business Rule:
+            Soft delete (is_active)
+        }
+        
+        entity "Category" as CategoryModel {
+            + id: UUID
+            + name: string
+        }
+        
+        entity "Order" as OrderModel {
+            + id: UUID
+            + user_id: UUID
+            + total_price: integer (VND)
+            + is_paid: boolean
+            + is_delivered: boolean
+            --
+            Business Rule:
+            Server-side price calc
+        }
+        
+        entity "OrderItem" as OrderItemModel {
+            + id: UUID
+            + order_id: UUID
+            + product_id: UUID
+            + qty: integer
+            + price: integer (VND)
+        }
+        
+        entity "Review" as ReviewModel {
+            + id: UUID
+            + product_id: UUID
+            + user_id: UUID
+            + rating: integer
+            + comment: string
+            --
+            Business Rule:
+            Only paid orders can review
+        }
+    }
+}
+
+' ==================== DATA FLOW ====================
+' User to View
+actor User
+User -down-> Frontend : 1. Interacts
+
+' View to Controller
+Frontend -down-> API : 2. HTTP Request\n(REST API)
+Frontend -down-> Middleware : Validation &\nAuthentication
+
+' Controller Processing
+Middleware -right-> AuthController
+Middleware -right-> ProductController
+Middleware -right-> OrderController
+Middleware -right-> CategoryController
+Middleware -right-> ReviewController
+
+AuthController -down-> AuthService
+ProductController -down-> ProductService
+OrderController -down-> OrderService
+CategoryController -down-> CategoryService
+ReviewController -down-> ReviewService
+
+' Controller to Model
+AuthService -down-> UserModel : 3. Query/Update
+ProductService -down-> ProductModel : 3. Query/Update
+ProductService -down-> CategoryModel
+OrderService -down-> OrderModel : 3. Query/Update
+OrderService -down-> OrderItemModel
+OrderService -down-> ProductModel : Stock Update
+CategoryService -down-> CategoryModel
+ReviewService -down-> ReviewModel : 3. Query/Update
+ReviewService -down-> OrderModel : Validate Paid Order
+
+' Model to Controller (Response)
+UserModel -up-> AuthService : 4. Data
+ProductModel -up-> ProductService : 4. Data
+OrderModel -up-> OrderService : 4. Data
+ReviewModel -up-> ReviewService : 4. Data
+
+' Controller to View (Response)
+AuthService -up-> AuthController
+ProductService -up-> ProductController
+OrderService -up-> OrderController
+CategoryService -up-> CategoryController
+ReviewService -up-> ReviewController
+
+API -up-> Frontend : 5. JSON Response
+
+' View to User
+Frontend -up-> User : 6. Updated UI
+
+' ==================== RELATIONSHIPS ====================
+ProductModel }o--|| CategoryModel : belongs to
+OrderModel }o--|| UserModel : placed by
+OrderItemModel }o--|| OrderModel : contains
+OrderItemModel }o--|| ProductModel : references
+ReviewModel }o--|| ProductModel : for
+ReviewModel }o--|| UserModel : written by
+
+' ==================== NOTES ====================
+note right of Frontend
+  <b>Technologies:</b>
+  • React 18
+  • TypeScript
+  • React Router
+  • State Management
+end note
+
+note right of API
+  <b>Technologies:</b>
+  • Express.js
+  • Node.js
+  • JWT Authentication
+  • Input Validation
+end note
+
+note right of DB
+  <b>Technologies:</b>
+  • Supabase (PostgreSQL)
+  • Row Level Security
+  • Real-time capabilities
+  
+  <b>Key Features:</b>
+  • Soft delete (is_active)
+  • VND integer pricing
+  • Paid-order review validation
+end note
+
+note bottom of User
+  <b>Data Flow:</b>
+  1. User interacts with View
+  2. View sends HTTP request to Controller
+  3. Controller processes & queries Model
+  4. Model returns data to Controller
+  5. Controller sends JSON response to View
+  6. View updates UI for User
+end note
+
+@enduml

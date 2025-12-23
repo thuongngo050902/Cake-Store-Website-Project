@@ -91,14 +91,31 @@ exports.authorizeAdmin = (req, res, next) => {
 exports.authenticate = exports.protect;
 
 // Optional authentication - doesn't fail if no token
-exports.optionalAuth = (req, res, next) => {
+exports.optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded = jwt.verify(token, config.jwtSecret);
-      req.user = decoded;
+      
+      // Extract user ID from decoded payload
+      const userId = decoded.id || decoded.sub || decoded.userId;
+      
+      if (userId) {
+        // Fetch user from Supabase
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (user && !error) {
+          // Attach sanitized user object (remove password)
+          const { password, ...userWithoutPassword } = user;
+          req.user = userWithoutPassword;
+        }
+      }
     }
     
     next();

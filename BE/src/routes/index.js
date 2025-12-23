@@ -8,6 +8,7 @@ const categoryRoutes = require('./category.routes');
 const reviewRoutes = require('./review.routes');
 const orderRoutes = require('./order.routes');
 const cartRoutes = require('./cart.routes');
+const recommendationRoutes = require('./recommendation.routes');
 
 // Use routes
 router.use('/auth', authRoutes);
@@ -16,6 +17,7 @@ router.use('/categories', categoryRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/orders', orderRoutes);
 router.use('/cart', cartRoutes);
+router.use('/recommendations', recommendationRoutes);
 
 // Root API route
 router.get('/', (req, res) => {
@@ -28,7 +30,8 @@ router.get('/', (req, res) => {
       categories: '/api/categories',
       reviews: '/api/reviews',
       orders: '/api/orders',
-      cart: '/api/cart'
+      cart: '/api/cart',
+      recommendations: '/api/recommendations'
     }
   });
 });
