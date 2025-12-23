@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: [
     'http://localhost:5173',          // FE local
-    'https://cake-store-website-project.onrender.com'      // FE production 
+    'https://tiembanhhaandthuong.vercel.app'      // FE production 
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
