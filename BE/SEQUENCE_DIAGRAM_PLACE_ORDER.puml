@@ -1,0 +1,147 @@
+@startuml Place_Order_Sequence_Diagram
+
+title Figure 5.7. Sequence Diagram of Place Order Feature - Cake Store
+
+actor User
+participant "Client (Web UI)" as Client
+participant "OrderController" as OrderC
+participant "AuthMiddleware (JWT)" as JWTM
+participant "OrderService" as OrderS
+participant "ProductService" as ProdS
+database "Supabase (Postgres)" as DB
+
+User -> Client: Click Checkout / Place Order
+
+note right of Client
+    Request Payload:
+    - shipping_address
+    - shipping_city
+    - shipping_postal_code
+    - shipping_country
+    - payment_method: "Cash" | "Bank Transfer"
+    - order_items: [{ product_id, qty }, ...]
+end note
+
+Client -> OrderC: POST /api/orders\n(shipping info, payment_method, order_items)\n+ Authorization: Bearer JWT
+
+OrderC -> JWTM: verifyToken(JWT)
+
+alt JWT invalid or expired
+    JWTM --> OrderC: 401 Unauthorized\n"Invalid or expired token"
+    OrderC --> Client: 401 Unauthorized
+    Client --> User: Redirect to Login
+    
+else JWT valid
+    JWTM --> OrderC: userId (decoded from token)
+    
+    OrderC -> OrderS: createOrder(userId, payload)
+    
+    OrderS -> OrderS: Validate cart not empty
+    
+    alt Order items array empty
+        OrderS --> OrderC: 400 Bad Request\n"Cart is empty"
+        OrderC --> Client: 400 Bad Request
+        Client --> User: Show "Cart is empty" message
+        
+    else Cart has items
+        OrderS -> OrderS: Validate payment_method\nin {"Cash", "Bank Transfer"}
+        
+        alt Invalid payment_method
+            OrderS --> OrderC: 400 Bad Request\n"Invalid payment method"
+            OrderC --> Client: 400 Bad Request
+            Client --> User: Show error message
+            
+        else Valid payment_method
+            note right of OrderS
+                Manual Payment Only:
+                No online payment processing.
+                Only payment_method is stored.
+                Admin confirms payment later.
+            end note
+            
+            loop For each order_item in cart
+                OrderS -> ProdS: validateProduct(product_id, qty)
+                
+                ProdS -> DB: SELECT product\nWHERE id = product_id
+                
+                alt Product not found
+                    DB --> ProdS: null
+                    ProdS --> OrderS: 400 Error\n"Product not found"
+                    OrderS --> OrderC: 400 Bad Request\n"Product not found"
+                    OrderC --> Client: 400 Bad Request
+                    Client --> User: Show error, return to cart
+                    
+                else Product exists
+                    DB --> ProdS: product data\n(id, name, price, image,\ncount_in_stock, is_active)
+                    
+                    ProdS -> ProdS: Check is_active == true
+                    
+                    alt Product inactive (is_active = false)
+                        ProdS --> OrderS: 400 Error\n"Product not available"
+                        OrderS --> OrderC: 400 Bad Request\n"Product not found or inactive"
+                        OrderC --> Client: 400 Bad Request
+                        Client --> User: Show error, return to cart
+                        
+                    else Product active
+                        ProdS -> ProdS: Check count_in_stock >= qty
+                        
+                        alt Out of stock (count_in_stock < qty)
+                            ProdS --> OrderS: 400 Error\n"Out of stock"
+                            OrderS --> OrderC: 400 Bad Request\n"Product out of stock"
+                            OrderC --> Client: 400 Bad Request
+                            Client --> User: Show error, return to cart
+                            
+                        else Stock available
+                            ProdS --> OrderS: OK + product snapshot\n(name, price, image)
+                        end
+                    end
+                end
+            end
+            
+            OrderS -> OrderS: Calculate prices (server-side):\n- items_price\n- shipping_price\n- tax_price\n- total_price
+            
+            OrderS -> DB: INSERT INTO orders\n(user_id, payment_method,\nitems_price, shipping_price,\ntax_price, total_price,\nis_paid = false,\nis_delivered = false,\nshipping_address, shipping_city,\nshipping_postal_code, shipping_country)
+            
+            alt Database insert fails
+                DB --> OrderS: Error
+                OrderS --> OrderC: 500 Internal Server Error\n"Order creation failed"
+                OrderC --> Client: 500 Internal Server Error
+                Client --> User: Show error message
+                
+            else Order created successfully
+                DB --> OrderS: order_id
+                
+                note right of OrderS
+                    Order created with:
+                    - is_paid = false
+                    - is_delivered = false
+                    Admin will confirm payment
+                    and delivery separately
+                end note
+                
+                loop For each order_item
+                    OrderS -> DB: INSERT INTO order_items\n(order_id, product_id,\nname, image, price, qty)\n[Snapshot of product data]
+                    
+                    OrderS -> DB: UPDATE products\nSET count_in_stock = count_in_stock - qty\nWHERE id = product_id
+                    
+                    DB --> OrderS: Updated
+                end
+                
+                OrderS -> DB: SELECT order with order_items\nWHERE order_id = ...
+                
+                DB --> OrderS: Complete order data
+                
+                OrderS --> OrderC: Order created successfully\n(order_id, status, items, total)
+                
+                OrderC --> Client: 201 Created\n{\n  order_id,\n  total_price,\n  payment_method,\n  is_paid: false,\n  is_delivered: false,\n  order_items: [...]\n}
+                
+                Client -> Client: Store order_id\nClear cart
+                
+                Client --> User: Show Order Confirmation Page\n(Order ID, Summary, Status)
+                
+            end
+        end
+    end
+end
+
+@enduml

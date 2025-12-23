@@ -1,0 +1,70 @@
+@startuml Login_Sequence_Diagram
+
+title Figure 5.6. Sequence Diagram of Login Feature - Cake Store
+
+actor User
+participant "Client (Web UI)" as Client
+participant "AuthController" as AuthC
+participant "AuthService" as AuthS
+database "Supabase (Postgres)" as DB
+participant "JWT Service" as JWT
+
+User -> Client: Enter email & password,\nclick Login
+
+Client -> AuthC: POST /api/auth/login\n(email, password)
+
+alt Missing fields (email or password empty)
+    AuthC --> Client: 400 Bad Request\n"Email and password are required"
+    Client --> User: Show validation error
+    
+else Valid input
+    AuthC -> AuthS: validateLogin(email, password)
+    
+    AuthS -> DB: SELECT user by email
+    
+    alt User not found
+        DB --> AuthS: null (no record)
+        AuthS --> AuthC: 401 Unauthorized\n"Invalid credentials"
+        AuthC --> Client: 401 Unauthorized\n"Invalid credentials"
+        Client --> User: Show error message
+        
+    else User exists
+        DB --> AuthS: user record\n(id, email, password_hash,\nis_admin, name)
+        
+        AuthS -> AuthS: Compare password\nwith bcrypt.compare()
+        
+        alt Wrong password
+            AuthS --> AuthC: 401 Unauthorized\n"Invalid credentials"
+            AuthC --> Client: 401 Unauthorized\n"Invalid credentials"
+            Client --> User: Show error message
+            
+        else Password correct
+            note right of AuthS
+                Security: Generic error message
+                "Invalid credentials" used for both
+                user-not-found and wrong-password
+                to prevent user enumeration
+            end note
+            
+            AuthS -> JWT: sign({\n  userId: user.id,\n  is_admin: user.is_admin\n}, expiresIn)
+            
+            JWT --> AuthS: jwtToken
+            
+            note right of AuthS
+                Security: password_hash
+                is NEVER returned to client
+            end note
+            
+            AuthS --> AuthC: {\n  user: { id, email, name, is_admin },\n  token: jwtToken\n}
+            
+            AuthC --> Client: 200 OK\n{\n  token: jwtToken,\n  user: { id, email, name, is_admin }\n}
+            
+            Client -> Client: Store token in localStorage\nSet auth state
+            
+            Client --> User: Redirect to Home/Profile\n(Login successful)
+            
+        end
+    end
+end
+
+@enduml
