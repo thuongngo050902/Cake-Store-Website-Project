@@ -1,0 +1,82 @@
+@startuml Cake_Store_Activity_Diagram_Login
+
+title Cake Store - Activity Diagram: Login
+
+|User|
+start
+:Open Login Page;
+:Enter Email and Password;
+
+|Client|
+:Validate Input Format
+(email format, non-empty fields);
+
+if (Valid Format?) then (no)
+  :Display Validation Error;
+  stop
+else (yes)
+  :Send POST /api/users/login
+  {email, password};
+endif
+
+|Backend API|
+:Receive Login Request;
+
+:Validate Request Body;
+
+if (Email and Password Present?) then (no)
+  :Return 400 Bad Request
+  {"message": "Email and password required"};
+  |Client|
+  :Display Error Message;
+  stop
+else (yes)
+endif
+
+:Query Supabase users table
+WHERE email = ?;
+
+if (User Found?) then (no)
+  :Return 401 Unauthorized
+  {"message": "Invalid email or password"};
+  |Client|
+  :Display Error Message;
+  stop
+else (yes)
+endif
+
+:Retrieve User Record
+(id, name, email, password, is_admin);
+
+:Compare Password Hash
+using bcrypt.compare();
+
+if (Password Matches?) then (no)
+  :Return 401 Unauthorized
+  {"message": "Invalid email or password"};
+  |Client|
+  :Display Error Message;
+  stop
+else (yes)
+endif
+
+:Generate JWT Token
+{userId, email, isAdmin};
+
+:Return 200 OK
+{token, user profile};
+
+|Client|
+:Receive Token and User Data;
+
+:Store Token in localStorage;
+
+:Store User Data in State/Context;
+
+:Redirect to Home/Dashboard;
+
+|User|
+:Login Successful;
+stop
+
+@enduml

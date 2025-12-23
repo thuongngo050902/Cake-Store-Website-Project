@@ -1,0 +1,62 @@
+@startuml Cake_Store_Context_Diagram
+!define RECTANGLE class
+
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title Cake Store System - Context Diagram
+
+' Actors
+actor "Guest" as Guest
+actor "Registered User" as RegUser
+actor "Administrator" as Admin
+
+' System
+rectangle "Cake Store System" as System {
+}
+
+' Guest Interactions
+Guest --> System : View products
+Guest --> System : Search products
+Guest --> System : Register
+Guest --> System : Login
+
+' Registered User Interactions
+RegUser --> System : Place order
+RegUser --> System : View order history
+RegUser --> System : Write review
+RegUser --> System : View products
+RegUser --> System : Search products
+
+' Administrator Interactions
+Admin --> System : Manage users
+Admin --> System : Manage products
+Admin --> System : Manage categories
+Admin --> System : Manage orders
+Admin --> System : Manage reviews
+
+note right of Guest
+  Unauthenticated visitor
+  Can browse and register
+end note
+
+note right of RegUser
+  Authenticated customer
+  Can make purchases and reviews
+end note
+
+note right of Admin
+  System administrator
+  Full management privileges
+end note
+
+note bottom of System
+  Backend API handling:
+  - Product catalog
+  - User authentication
+  - Order processing
+  - Review management
+  - Admin operations
+end note
+
+@enduml

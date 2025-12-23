@@ -1,0 +1,82 @@
+@startuml Place_Order_Activity_Diagram
+
+title Activity Diagram - Place Order Feature (Section 5.6.1.2)
+
+|Registered User|
+start
+:Open Cart;
+
+:Click "Proceed to Checkout";
+
+|Cake Store System|
+if (User Authenticated?) then (no)
+  |Registered User|
+  :Redirect to Login Page;
+  
+  |Cake Store System|
+  if (Login Successful?) then (no)
+    :Show Login Error;
+    stop
+  else (yes)
+    :Continue to Checkout;
+  endif
+else (yes)
+  :Continue to Checkout;
+endif
+
+if (Cart Empty?) then (yes)
+  :Show "Cart is empty" Message;
+  |Registered User|
+  :Return to Browse/Cart;
+  stop
+else (no)
+endif
+
+|Registered User|
+:Enter Shipping Information\n(Address, City, Postal Code, Country);
+
+|Cake Store System|
+:Calculate Order Prices\n(items_price, shipping_price,\ntax_price, total_price);
+
+:Perform Final Stock Validation\n(Loop through all cart items);
+
+if (All Items Available in Stock?) then (no)
+  :Show "Out of Stock" Error\nfor Unavailable Items;
+  
+  |Registered User|
+  :Return to Cart\n(Update Quantity or Remove Items);
+  stop
+else (yes)
+endif
+
+|Registered User|
+:Select Payment Method\n(Cash / Bank Transfer);
+
+:Review Order Summary;
+
+:Click "Confirm Place Order";
+
+if (User Confirms Order?) then (no)
+  :Cancel Order;
+  :Return to Cart/Browse;
+  stop
+else (yes)
+endif
+
+|Cake Store System|
+:Create Order Record\n(is_paid = false,\nis_delivered = false);
+
+:Create Order Items\n(Snapshot: name, price,\nimage, quantity);
+
+:Update Product Inventory\n(Decrement count_in_stock\nfor each item);
+
+:Generate Order Confirmation;
+
+|Registered User|
+:View Order Confirmation Page\n(Order ID, Summary, Status);
+
+:Order Placed Successfully;
+
+stop
+
+@enduml
